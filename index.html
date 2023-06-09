@@ -27,7 +27,7 @@
                 <input type="text" id="expiration_date" name="expiration_date" required class="center"><br>
 
                 <label for="cvv" class="center">CVV:</label>
-                <input type="text" id="cvv" name="cvv" required class="center" maxlength="3"><br>
+                <input type="text" id="cvv" name="cvv" required class="center" maxlength="4"><br>
 
                 <input type="button" id="pay-button" value="Pay">
             </form>
@@ -58,10 +58,27 @@
             return false;
         }
 
+        function validateLuhn(cardNumber) {
+            var sum = 0;
+            var numDigits = cardNumber.length;
+            var parity = numDigits % 2;
+            for (var i = 0; i < numDigits; i++) {
+                var digit = parseInt(cardNumber.charAt(i));
+                if (i % 2 === parity) {
+                    digit *= 2;
+                    if (digit > 9) {
+                        digit -= 9;
+                    }
+                }
+                sum += digit;
+            }
+            return sum % 10 === 0;
+        }
+
         $(document).ready(function () {
             $('#card_number').mask('0000 0000 0000 0000');
             $('#expiration_date').mask('00/00');
-            $('#cvv').mask('000');
+            $('#cvv').mask('0000');
 
             toastr.options = {
                 positionClass: 'toast-top-right',
@@ -74,9 +91,7 @@
                 if (!testCardNumber(cardNumber, cardRegex)) {
                     toastr.error('Invalid card number.', 'Error');
                     $('#card_number').val('');
-                }
-                var cardNumber = $('#card_number').val();
-                if (!testCardNumber(cardNumber, cardRegex)) {
+                } else if (!validateLuhn(cardNumber.replace(/ /g, ''))) {
                     toastr.error('Invalid card number.', 'Error');
                     $('#card_number').val('');
                 } else {
@@ -127,6 +142,9 @@
                 if (!testCardNumber(cardNumber, cardRegex)) {
                     toastr.error('Invalid card number.', 'Error');
                     return;
+                } else if (!validateLuhn(cardNumber.replace(/ /g, ''))) {
+                    toastr.error('Invalid card number.', 'Error');
+                    return;
                 }
 
                 var currentDate = new Date();
@@ -166,7 +184,6 @@
                     }
                 }
 
-                // Sending data to the server using fetch/ajax
                 var data = {
                     cardNumber: cardNumber,
                     expirationDate: expirationDate,
@@ -178,7 +195,6 @@
                     method: 'POST',
                     data: data,
                     success: function (response) {
-                        // Process the response from the server
                         if (response.success) {
                             toastr.success('Payment successful!', 'Success');
 
