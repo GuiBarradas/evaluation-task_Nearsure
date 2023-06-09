@@ -6,77 +6,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" rel="stylesheet">
+    <link href="./style.css" rel="stylesheet">
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nearsure Test</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-
-        .form-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 400px;
-        }
-
-        .form-box {
-            width: 100%;
-            padding: 20px;
-            margin-bottom: 0;
-            border-radius: 3px;
-            background-color: #345873;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: bolder;
-        }
-
-        .form-box h1 {
-            text-align: center;
-        }
-
-        .form-box label,
-        .form-box input[type="text"] {
-            display: block;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .form-box input[type="text"] {
-            margin: 0 auto;
-        }
-
-        .form-box .center {
-            display: flex;
-            justify-content: center;
-        }
-
-        .form-box input[type="submit"] {
-            width: 100%;
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .header {
-            width: 105%;
-            background-color: #28455c;
-            padding: 10px;
-            text-align: center;
-            color: white;
-            border-radius: 3px;
-            margin-top: 0;
-            font-family: 'Montserrat', sans-serif;
-        }
-    </style>
 </head>
 
 <body>
@@ -85,7 +19,7 @@
             Nearsure Test
         </div>
         <div class="form-box">
-            <form id="payment-form" method="POST">
+            <form id="payment-form">
                 <label for="card_number" class="center">Card Number:</label>
                 <input type="text" id="card_number" name="card_number" required class="center"><br>
 
@@ -93,9 +27,9 @@
                 <input type="text" id="expiration_date" name="expiration_date" required class="center"><br>
 
                 <label for="cvv" class="center">CVV:</label>
-                <input type="text" id="cvv" name="cvv" required class="center"><br>
+                <input type="text" id="cvv" name="cvv" required class="center" maxlength="3"><br>
 
-                <input type="submit" value="Pay">
+                <input type="button" id="pay-button" value="Pay">
             </form>
         </div>
     </div>
@@ -103,6 +37,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+
     <script>
         var cardRegex = {
             Visa: /^4[0-9]{12}(?:[0-9]{3})?$/,
@@ -122,46 +58,6 @@
             return false;
         }
 
-        function validateCardNumber() {
-            var cardNumber = $('#card_number').val();
-
-            if (testCardNumber(cardNumber, cardRegex)) {
-                return true;
-            } else {
-                toastr.error('Invalid card number.', 'Error');
-                $('#card_number').val('');
-                return false;
-            }
-        }
-
-        function validateExpirationDate() {
-            var expirationDate = $('#expiration_date').val();
-            var currentDate = new Date();
-            var currentYear = currentDate.getFullYear();
-            var currentMonth = currentDate.getMonth() + 1;
-
-            var expirationParts = expirationDate.split('/');
-            var expirationMonth = parseInt(expirationParts[0]);
-            var expirationYear = parseInt(expirationParts[1]);
-
-            // Converting the year to the YYYY format
-            if (expirationYear < 100) {
-                expirationYear += 2000;
-            }
-
-            if (expirationYear < currentYear || (expirationYear === currentYear && expirationMonth < currentMonth)) {
-                if (expirationMonth < 1 || expirationMonth > 12) {
-                    toastr.error('Invalid expiration date.', 'Error');
-                } else {
-                    toastr.error('Card expired.', 'Error');
-                }
-                $('#expiration_date').val('');
-                return false;
-            }
-
-            return true;
-        }
-
         $(document).ready(function () {
             $('#card_number').mask('0000 0000 0000 0000');
             $('#expiration_date').mask('00/00');
@@ -173,41 +69,128 @@
                 progressBar: true
             };
 
-            $('#card_number').on('blur', validateCardNumber);
-            $('#expiration_date').on('blur', validateExpirationDate);
-
-            $('#payment-form').submit(function (event) {
-                event.preventDefault(); 
-
-                if (validateCardNumber() && validateExpirationDate()) {
-                    var cardNumber = $('#card_number').val();
-                    var expirationDate = $('#expiration_date').val();
-                    var cvv = $('#cvv').val();
-
-                    // Criar um objeto com os dados do cartão
-                    var cardData = {
-                        card_number: cardNumber,
-                        expiration_date: expirationDate,
-                        cvv: cvv
-                    };
-
-                    // Enviar a requisição AJAX para o servidor
-                    $.ajax({
-                        url: 'dataProcess.php',
-                        method: 'POST',
-                        data: cardData,
-                        success: function (response) {
-                            toastr.success('Payment successful!', 'Success');
-                            console.log(response);
-                           
-                        },
-                        error: function (xhr, status, error) {
-                            toastr.error('Payment failed.', 'Error');
-                            console.log(xhr.responseText);
-                            
-                        }
-                    });
+            $('#card_number').on('blur', function () {
+                var cardNumber = $('#card_number').val();
+                if (!testCardNumber(cardNumber, cardRegex)) {
+                    toastr.error('Invalid card number.', 'Error');
+                    $('#card_number').val('');
                 }
+                var cardNumber = $('#card_number').val();
+                if (!testCardNumber(cardNumber, cardRegex)) {
+                    toastr.error('Invalid card number.', 'Error');
+                    $('#card_number').val('');
+                } else {
+                    var cvvField = $('#cvv');
+                    if (cardNumber.startsWith('34') || cardNumber.startsWith('37')) {
+                        cvvField.attr('maxlength', '4');
+                        cvvField.mask('0000');
+                    } else {
+                        cvvField.attr('maxlength', '3');
+                        cvvField.mask('000');
+                    }
+                }
+            });
+
+            $('#expiration_date').on('blur', function () {
+                var expirationDate = $('#expiration_date').val();
+                var currentDate = new Date();
+                var currentYear = currentDate.getFullYear();
+                var currentMonth = currentDate.getMonth() + 1;
+
+                var expirationParts = expirationDate.split('/');
+                var expirationMonth = parseInt(expirationParts[0]);
+                var expirationYear = parseInt(expirationParts[1]);
+
+                // converting the year to the YYYY format
+                if (expirationYear < 100) {
+                    expirationYear += 2000;
+                }
+
+                if (
+                    expirationYear < currentYear ||
+                    (expirationYear === currentYear && expirationMonth < currentMonth)
+                ) {
+                    if (expirationMonth < 1 || expirationMonth > 12) {
+                        toastr.error('Invalid expiration date.', 'Error');
+                    } else {
+                        toastr.error('Card expired.', 'Error');
+                    }
+                    $('#expiration_date').val('');
+                }
+            });
+
+            $('#pay-button').click(function () {
+                var cardNumber = $('#card_number').val();
+                var expirationDate = $('#expiration_date').val();
+                var cvv = $('#cvv').val();
+
+                if (!testCardNumber(cardNumber, cardRegex)) {
+                    toastr.error('Invalid card number.', 'Error');
+                    return;
+                }
+
+                var currentDate = new Date();
+                var currentYear = currentDate.getFullYear();
+                var currentMonth = currentDate.getMonth() + 1;
+
+                var expirationParts = expirationDate.split('/');
+                var expirationMonth = parseInt(expirationParts[0]);
+                var expirationYear = parseInt(expirationParts[1]);
+
+                if (expirationYear < 100) {
+                    expirationYear += 2000;
+                }
+
+                if (
+                    expirationYear < currentYear ||
+                    (expirationYear === currentYear && expirationMonth < currentMonth)
+                ) {
+                    if (expirationMonth < 1 || expirationMonth > 12) {
+                        toastr.error('Invalid expiration date.', 'Error');
+                    } else {
+                        toastr.error('Card expired.', 'Error');
+                    }
+                    return;
+                }
+
+                if (cvv.length < 3 || !/^\d+$/.test(cvv)) {
+                    toastr.error('Invalid CVV.', 'Error');
+                    return;
+                }
+
+                // checking for AMEX card numbers
+                if (cardNumber.startsWith('34') || cardNumber.startsWith('37')) {
+                    if (cvv.length !== 4 || !/^\d+$/.test(cvv)) {
+                        toastr.error('Invalid CVV for Amex card.', 'Error');
+                        return;
+                    }
+                }
+
+                // Sending data to the server using fetch/ajax
+                var data = {
+                    cardNumber: cardNumber,
+                    expirationDate: expirationDate,
+                    cvv: cvv
+                };
+
+                $.ajax({
+                    url: 'process_payment.php',
+                    method: 'POST',
+                    data: data,
+                    success: function (response) {
+                        // Process the response from the server
+                        if (response.success) {
+                            toastr.success('Payment successful!', 'Success');
+
+                        } else {
+                            toastr.error('Payment failed.', 'Error');
+
+                        }
+                    },
+                    error: function () {
+                        toastr.error('An error occurred while processing the payment.', 'Error');
+                    }
+                });
             });
         });
     </script>
