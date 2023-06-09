@@ -21,3 +21,5 @@ Implement a simple page with an input form to collect credit card information an
 6. Drag the project folder to the **htdocs** folder of XAMPP. Path: **C:\xampp\htdocs**
 7. Access the application through localhost.
 ---
+
+PS: On `secrets.php` you'll need to put the secret key of Stripe API. Here on [Stripe API Quickstart](https://stripe.com/docs/checkout/quickstart) guide you have some explanations and samples to test.
